@@ -185,6 +185,31 @@ quarkus.shutdown.timeout=5S
 %prod.quarkus.opentelemetry.enabled=true
 %dev.quarkus.opentelemetry.enabled=false
 ```
+**Important**: If the directories are not recognized as modules, add the following lines to `pom.xml`:
+
+```xml
+<modules>
+    <module>election-management</module>
+    <module>voting-app</module>
+    <module>result-app</module>
+</modules>
+```
+
+OR (see: https://stackoverflow.com/questions/33531334/convert-directories-with-java-files-to-java-modules-in-intellij):
+
+File > New > Project From Existing Sources...
+
+Select the directory.
+
+OR:
+
+- Find the pom.xml in the directory.
+
+- Right-click the pom.xml.
+
+- Then you can see the popup windows. Select the last item "add as maven project".
+
+Then, the maven build tool can automatically discern the directory as a module and import the specified jar dependencies.
 
 ## Build
 
@@ -308,7 +333,14 @@ https://martinfowler.com/eaaCatalog/repository.html
 https://martinfowler.com/eaaCatalog/queryObject.html
 https://martinfowler.com/dslCatalog/constructionBuilder.html
 
-At election-management/src/main/java/domain/, create a Record class Candidate.
+First run in the terminal:
+
+```bash
+cd election-management
+quarkus dev
+```
+
+Then, at election-management/src/main/java/domain/, create a Record class Candidate.
 
 **Java records** are a special kind of class introduced in **Java 14**. They are designed for simplicity, aiming to encapsulate data without the clutter of boilerplate code. [With their concise syntax, records allow us to create **immutable data holders** effortlessly](https://reflectoring.io/beginner-friendly-guide-to-java-records/)[1](https://reflectoring.io/beginner-friendly-guide-to-java-records/).
 
@@ -390,6 +422,12 @@ Here are some key points about Java records:
 
 In summary, Java records simplify data modeling and provide a language-level syntax for common programming patterns. [They’re a powerful addition to the Java language](https://qiita.com/ReiTsukikazu/items/6dc3ec9ea9646c472db0)
 
+### Testing
 Then create a class CandidateService in the same directory.
 
-Now letś w
+Now let's write some tests.
+
+At src, create a new directory named test. At CandidateService class, right-click the lamp and select Create Test or click the class name and Generate Test.
+It will generate automatically the test class.
+
+
