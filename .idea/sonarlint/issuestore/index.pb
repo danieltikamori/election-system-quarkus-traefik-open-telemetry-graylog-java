@@ -1,6 +1,4 @@
 
-7
-pom.xml,4/4/442292b8a7efeabbe4cc176709b833b1792140ec
 m
 =election-management/src/main/resources/application.properties,8/9/89b9781182e35d86f7798009ac566f17d3c7fd4d
 K
@@ -15,3 +13,17 @@ M
 election-management/README.md,7/a/7afb1ccc6ab724e98d9e575828cbc49166f9e000
 D
 result-app/README.md,0/6/06bf6d5a978b9aef7798fe4381a478e00f23fe3a
+g
+7election-management/src/main/java/domain/Candidate.java,b/7/b7a1666f96d37f92b8c6d6234165a58c39cae8ba
+n
+>election-management/src/main/java/domain/CandidateService.java,a/f/af61797176d387b4dec054879003c44962452e5c
+r
+Belection-management/src/test/java/domain/CandidateServiceTest.java,3/7/37bd03d899e88969c706504df36d287e3e518f31
+l
+<election-management/src/main/java/domain/CandidateQuery.java,b/9/b905806110ed0a9dff517f8361910c05d986e2c4
+‡
+Welection-management/src/main/java/infrastructure/repository/SQLCandidateRepository.java,4/b/4b2a5e346b96603dbd0075c51df843c936d55cee
+q
+Aelection-management/src/main/java/domain/CandidateRepository.java,7/6/76980733438c18b19c31491acfffcd9ec298ff77
+=
+cicd-build.sh,e/8/e830c9a12bdd1454727b911972152ef3e9430e14

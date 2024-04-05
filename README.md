@@ -430,4 +430,28 @@ Now let's write some tests.
 At src, create a new directory named test. At CandidateService class, right-click the lamp and select Create Test or click the class name and Generate Test.
 It will generate automatically the test class.
 
+At the terminal (with Quarkus running), type `r` to resume testing.
+
+Fill the files.
+
+#### Repository
+
+Create an interface CandidateRepository in the domain directory. It will serve as a database abstraction.
+The implementation will be in the infrastructure directory.
+
+At the infrastructure, create a new package named repository. At the newly created package, create a class SQLCandidateRepository in it.
+Implement the interface CandidateRepository and use the SQLCandidateRepository as the implementation.
+
+Mock the repository to verify if it works. Add Mockito in the pom.xml.
+
+Fill the files.
+
+Add Instancio in the pom.xml.
+
+Fill the files.
+
+At the CandidateServiceTest, create a break point at `candidateService.save(candidate);` and go to Run menu and Attach to Process.
+Type `r` to resume testing. Verify if the Instancio created a candidate sample.
+
+
 
