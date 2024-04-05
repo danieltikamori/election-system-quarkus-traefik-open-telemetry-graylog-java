@@ -1,12 +1,10 @@
-package infrastructure.repository;
+package infrastructure.repositories;
 
 import domain.CandidateRepository;
 import domain.CandidateRepositoryTest;
 import io.quarkus.test.junit.QuarkusTest;
 
 import javax.inject.Inject;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
 class SQLCandidateRepositoryTest extends CandidateRepositoryTest {

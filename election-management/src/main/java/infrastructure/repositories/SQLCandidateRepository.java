@@ -1,4 +1,4 @@
-package infrastructure.repository;
+package infrastructure.repositories;
 
 import domain.Candidate;
 import domain.CandidateQuery;
