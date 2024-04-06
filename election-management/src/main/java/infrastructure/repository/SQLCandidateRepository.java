@@ -3,7 +3,7 @@ package infrastructure.repository;
 import domain.Candidate;
 import domain.CandidateQuery;
 import domain.CandidateRepository;
-import jakarta.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.ApplicationScoped;
 
 import java.util.List;
 import java.util.Optional;

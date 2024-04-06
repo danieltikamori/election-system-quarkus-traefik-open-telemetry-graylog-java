@@ -1,8 +1,8 @@
 package domain;
 
-import io.quarkus.test.InjectMock;
+import io.quarkus.test.junit.mockito.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import jakarta.inject.Inject;
+import javax.inject.Inject;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
