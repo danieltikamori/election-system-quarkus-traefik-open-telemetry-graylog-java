@@ -28,6 +28,7 @@ sdk install java 17.0.6-tem
 sdk use java 17.0.6-tem
 java --version
 ```
+
 openjdk 17.0.6 2023-01-17
 OpenJDK Runtime Environment Temurin-17.0.6+10 (build 17.0.6+10)
 OpenJDK 64-Bit Server VM Temurin-17.0.6+10 (build 17.0.6+10, mixed mode, sharing)
@@ -98,10 +99,7 @@ docker compose up -d graylog
 curl -H "Content-Type: application/json" \
 -H "Authorization: Basic YWRtaW46YWRtaW4=" \
 -H "X-Requested-By: curl" \
--X POST -v -d '{"title":"udp
-input","configuration":{"recv_buffer_size":262144,"bind_address":"0.0.0.0","port":12201,"de
-compress_size_limit":8388608},"type":"org.graylog2.inputs.gelf.udp.GELFUDPInput","global":t
-rue}' http://logging.private.dio.localhost/api/system/inputs
+-X POST -v -d '{"title":"udp\ninput","configuration":{"recv_buffer_size":262144,"bind_address":"0.0.0.0","port":12201,"decompress_size_limit":8388608},"type":"org.graylog2.inputs.gelf.udp.GELFUDPInput","global":true}' http://logging.private.tkmr.localhost/api/system/inputs
 docker compose up -d caching database
 ```
 
@@ -356,6 +354,9 @@ https://martinfowler.com/eaaCatalog/repository.html
 https://martinfowler.com/eaaCatalog/queryObject.html
 https://martinfowler.com/dslCatalog/constructionBuilder.html
 
+
+### Election Management - service
+
 First run in the terminal:
 
 ```bash
@@ -445,7 +446,7 @@ Here are some key points about Java records:
 
 In summary, Java records simplify data modeling and provide a language-level syntax for common programming patterns. [They’re a powerful addition to the Java language](https://qiita.com/ReiTsukikazu/items/6dc3ec9ea9646c472db0)
 
-### Testing
+#### Testing
 Then create a class CandidateService in the same directory.
 
 Now let's write some tests.
@@ -482,6 +483,152 @@ Remove the break point. Restart the execution.
 
 As I was developing, there's a possibility the of Main class don't be created. So verify and create Main class in the application infrastructure.
 
+#### Build for testing purposes
+
+Certify the .sh files are executable. Make sure other containers are running (the ones started in the Setup section).
+If note running, run these commands:
+
+```bash
+docker compose up -d reverse-proxy
+docker compose up -d jaeger
+docker compose up -d mongodb opensearch
+docker compose up -d graylog
+curl -H "Content-Type: application/json" \
+-H "Authorization: Basic YWRtaW46YWRtaW4=" \
+-H "X-Requested-By: curl" \
+-X POST -v -d '{"title":"udp\ninput","configuration":{"recv_buffer_size":262144,"bind_address":"0.0.0.0","port":12201,"decompress_size_limit":8388608},"type":"org.graylog2.inputs.gelf.udp.GELFUDPInput","global":true}' http://logging.private.tkmr.localhost/api/system/inputs
+docker compose up -d caching database
+```
+
+Build the application. Run:
+
+```bash
+cd election-management
+./cicd-build.sh election-management
+docker images
+./cicd-blue-green-deployment.sh election-management <tag>
+```
+
+Open the browser, type `localhost:8080/dashboard/`.
+Should open the dashboard. Then open `logging.private.tkmr.localhost`.
+Enter admin admin to login.
+
+
+### Election Management - Repository
+
+**Migration**
+- Flyway 
+- Testcontainers
+
+**Data Mapper**
+- Hibernate ORM
+
+At the terminal ./election-management, run:
+
+```bash
+quarkus extension add 'quarkus-flyway' 'quarkus-jdbc-mariadb'
+mkdir -p src/main/resources/db/migration
+```
+The mkdir command will create a directory to store the versioning files of the database (structure).
+
+At pom.xml add the following dependency:
+
+```xml
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-mysql</artifactId>
+    </dependency>
+```
+
+Go to the migration directory and create a file named `V1__CreateTableCandidates.sql`
+Fill the file.
+
+Go to application.properties files and add the following:
+
+```properties
+# FLYWAY
+quarkus.flyway.migrate-at-start=true
+
+# TESTCONTAINERS
+quarkus.datasource.devservices.image-name=mariadb:10.11.2
+```
+
+Open the terminal, at /election-management, run `quarkus dev`.
+Verify if the database is running and connected.
+
+Then run:
+```bash
+docker exec -it <database-container-id> mysql -uquarkus -pquarkus quarkus
+```
+
+**Important note**
+The command above worked with MariaDB 10.11.2. Tried with a more recent version and don worked at all, mysql executable not found in $PATH.
+
+Now that connected to MariaDB, run:
+
+```shell
+show tables;
+```
+
+Then one after another:
+
+```shell
+select * from flyway_schema_history;
+select * from candidates;
+```
+
+Go to docker-compose.yml and at election-management, below `image:`, add:
+
+```yaml
+ environment:
+      - QUARKUS_DATASOURCE_USERNAME=election-management-user
+      - QUARKUS_DATASOURCE_PASSWORD=election-management-password
+      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:mariadb://database:3306/election-management
+```
+
+Also at database, replace existing environment: with:
+
+```yaml
+    environment:
+      - MARIADB_USER=election-management-user
+      - MARIADB_PASSWORD=election-management-password
+      - MARIADB_DATABASE=election-management
+      - MARIADB_ROOT_PASSWORD=root
+```
+
+To update the database container, run:
+
+```bash
+docker compose stop database
+docker compose rm database
+docker compose up -d database
+```
+
+#### Adding Hibernate
+
+Open the terminal, at /election-management, run:
+
+```bash
+quarkus extension add 'quarkus-hibernate-orm'
+```
+
+Update the application.properties adding:
+
+```properties
+# HIBERNATE
+quarkus.datasource.db-kind=mariadb
+quarkus.hibernate-orm.database.generation=none
+%dev.quarkus.hibernate-orm.log.sql=true
+%test.quarkus.hibernate-orm.log.sql=true
+%dev.quarkus.hibernate-orm.log.bind-parameters=true
+%test.quarkus.hibernate-orm.log.bind-parameters=true
+```
+
+Create tests for SQLCandidateRepository class and CandidateRepository interface.
+
+For the implementation, the test is basically database connection check.
+
+For the interface, all the logic will be inside interface test. It is possible to test MySQL, Redis, etc.
 
 
 
