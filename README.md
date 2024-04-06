@@ -224,10 +224,27 @@ docker build -f src/main/docker/Dockerfile.jvm -t tkmr/election-management .
 ```
 
 Or (recommended) run:
+Note: make sure the .sh files are executable. `chmod u+x cicd-build.sh`
 
 ```bash
 ./cicd-build.sh <application-name>
 # ./cicd-build.sh election-management
+```
+
+If an error related to git occur, it is probably about local settings.
+Run to verify local configuration:
+
+```bash
+git config --local -l
+```
+
+Then run:
+
+```bash
+git config user.name <versioningcontrolapp-username>
+git config user.email <your-email>
+git config user.signingkey <your signingkey> (optional)
+git config --local -l
 ```
 
 Testing:
@@ -248,10 +265,16 @@ docker build -f src/main/docker/Dockerfile.native -t tkmr/election-management .
 Progressive Deployment
 Blue Green Deployment
 
+Verify the Docker image to retrieve the image name and tag:
+
+```bash
+docker images
+```
+
 Run:
 
 ```bash
-./cicd-blue-green-deployment.sh
+./cicd-blue-green-deployment.sh appdirectory 1.0.0
 ```
 
 ## Architecture
@@ -446,12 +469,20 @@ Mock the repository to verify if it works. Add Mockito in the pom.xml.
 
 Fill the files.
 
-Add Instancio in the pom.xml.
+Add Instancio in the pom.xml. Instancio populates data.
 
 Fill the files.
 
 At the CandidateServiceTest, create a break point at `candidateService.save(candidate);` and go to Run menu and Attach to Process.
 Type `r` to resume testing. Verify if the Instancio created a candidate sample.
+
+Remove the break point. Restart the execution.
+
+**IMPORTANT NOTE**
+
+As I was developing, there's a possibility the of Main class don't be created. So verify and create Main class in the application infrastructure.
+
+
 
 
 
