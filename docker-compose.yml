@@ -5,7 +5,7 @@ services:
 
   ## https://doc.traefik.io/traefik/
   reverse-proxy:
-    image: traefik:3.0.0
+    image: traefik:2.9.8
     command:
       - --api.insecure=true
       - --providers.docker=true
@@ -28,6 +28,10 @@ services:
       # dockerfile: src/main/docker/Dockerfile.native # For native image
       dockerfile: src/main/docker/Dockerfile.jvm
     image: tkmr/election-management:${TAG:-1.0.0}
+    environment:
+      - QUARKUS_DATASOURCE_USERNAME=election-management-user
+      - QUARKUS_DATASOURCE_PASSWORD=election-management-password
+      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:mariadb://database:3306/election-management
     labels:
       - traefik.http.routers.election-management.rule=Host(`vote.tkmr.localhost`) && PathPrefix(`/api`)
       - traefik.http.routers.election-management.entrypoints=web
@@ -64,6 +68,9 @@ services:
   database:
     image: mariadb:10.11.2
     environment:
+      - MARIADB_USER=election-management-user
+      - MARIADB_PASSWORD=election-management-password
+      - MARIADB_DATABASE=election-management
       - MARIADB_ROOT_PASSWORD=root
 
   # CACHING - https://quarkus.io/guides/redis
