@@ -16,34 +16,34 @@ import static org.mockito.Mockito.*;
 
 @QuarkusTest
 class CandidateServiceTest {
-
     @Inject
-    CandidateService candidateService;
+    CandidateService service;
 
     @InjectMock
     CandidateRepository repository;
 
     @Test
     void save() {
-        Candidate candidate = Instancio.create(Candidate.class);
-        candidateService.save(candidate);
+        var domain = Instancio.create(Candidate.class);
 
-        verify(repository).save(candidate);
+        service.save(domain);
+
+        verify(repository).save(domain);
         verifyNoMoreInteractions(repository);
     }
 
     @Test
     void findAll() {
-        List<Candidate> candidates = Instancio.stream(Candidate.class).limit(10).toList();
+        var candidates = Instancio.stream(Candidate.class).limit(10).toList();
 
         when(repository.findAll()).thenReturn(candidates);
 
-        List<Candidate> result = candidateService.findAll();
+        var result = service.findAll();
 
         verify(repository).findAll();
         verifyNoMoreInteractions(repository);
 
-        assertEquals(candidates, result);
+        assertEquals(result, candidates);
     }
 
     @Test
@@ -52,7 +52,7 @@ class CandidateServiceTest {
 
         when(repository.findById(domain.id())).thenReturn(Optional.of(domain));
 
-        var result = candidateService.findById(domain.id());
+        var result = service.findById(domain.id());
 
         verify(repository).findById(domain.id());
         verifyNoMoreInteractions(repository);
@@ -64,7 +64,7 @@ class CandidateServiceTest {
     void findById_whenCandidateIsNotFound_throwsException() {
         var id = UUID.randomUUID().toString();
         when(repository.findById(id)).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> candidateService.findById(id));
+        assertThrows(NoSuchElementException.class, () -> service.findById(id));
         verify(repository).findById(id);
         verifyNoMoreInteractions(repository);
     }
