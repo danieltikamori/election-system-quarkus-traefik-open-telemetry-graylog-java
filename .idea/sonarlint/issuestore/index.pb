@@ -27,3 +27,13 @@ q
 Aelection-management/src/main/java/domain/CandidateRepository.java,7/6/76980733438c18b19c31491acfffcd9ec298ff77
 =
 cicd-build.sh,e/8/e830c9a12bdd1454727b911972152ef3e9430e14
+s
+Csrc/main/java/infrastructure/repository/SQLCandidateRepository.java,f/e/fea6d5259261dcec8541aa0da622982ba6065738
+w
+Gsrc/test/java/infrastructure/repository/SQLCandidateRepositoryTest.java,b/9/b9a19ed02b414a40e755ba8f49678c63210811f7
+a
+1src/test/java/domain/CandidateRepositoryTest.java,5/b/5b4a344f56d4bc7bcf1bac45be3bc88da9040e7d
+y
+Isrc/test/java/infrastructure/repositories/SQLCandidateRepositoryTest.java,0/4/04a003a0ff5e04f0a4d70c0a105a0059b14dc0e1
+u
+Esrc/main/java/infrastructure/repositories/SQLCandidateRepository.java,7/1/7166cadba282e4f8a1f7f98361a4ea98f3369e29
