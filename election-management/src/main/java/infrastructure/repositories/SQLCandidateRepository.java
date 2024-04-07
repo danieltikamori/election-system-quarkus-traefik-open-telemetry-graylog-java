@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2024 Daniel I. Tikamori. All rights reserved.
+ */
+
 package infrastructure.repositories;
 
 import domain.Candidate;

@@ -645,13 +645,123 @@ After successful test, make sure the database, etc. containers are running and t
 
 Open the browser and open http://logging.private.tkmr.localhost search.
 
+### Election management - API layer
+
+- JSON Rest Services
+- Data Transfer Object (DTO)
+- Integration Test
+
+Domain layer have the business rules and some  external communication interfaces.
+Infrastructure layer have what is specific for external communication and database configuration.
+API layer do the communication between both. Gateway between Domain and Infrastructure.
+
+At API, create a new `CandidateApi` class. Update the file and create the test.
+
+#### DTO
+
+DTO stands for Data Transfer Object. It is an object that carries data between processes.
+DTOs are often used to encapsulate the data that needs to be transferred over a network or between different layers of an application.
+They typically do not contain any business logic but instead focus on data exchange.
+
+Some best practices for working with Data Transfer Objects (DTOs) include:
+
+- Keep DTOs simple and focused on data transfer only, avoid adding business logic to them.
+- Use DTOs to transfer only the necessary data between layers or components of an application.
+- Consider using mapping libraries to easily convert between DTOs and domain objects.
+- Name DTOs clearly to indicate their purpose and the data they represent.
+- Avoid using nested DTO structures if possible, as they can lead to complexity and performance issues.
+- Validate DTO data at the entry point of the application to ensure consistency and integrity.
+
+These best practices can help maintain a clean and efficient data transfer process within an application.
+
+At api, create a new `dto` package. Inside dto, create 2 packages, one `in` and another `out`.
+At `ìn` package, create CreateCandidate and UpdateCandidate records.
+At `out` package, create Candidate record.
+
+Update the tests.
+
+Now we can think about REST service.
+
+AT infrastructure, create resources package and inside it CandidateResource class.
+
+Generate test for CandidateResource class.
+
+At pom.xml, add a testing Rest assured, Resteasy, Reactive Jackson, and OpenAPI dependencies:
 
 
+```xml
+    <dependency>
+      <groupId>io.rest-assured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <scope>test</scope>
+    </dependency>
 
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-resteasy-reactive</artifactId>
+    </dependency>
+    
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+    </dependency>
 
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-smallrye-openapi</artifactId>
+    </dependency>
+```
 
+After updating the files, stop traefik and election-management container if still running.
+Run quarkus dev at election-management directory. Open the browser at http://localhost:8080/q/dev.
+Verify that there's new options like Smallrye OpenAPI. 
+Open http://localhost:8080/q/openapi.json to see the API specification.
+Open Swagger UI. You can test the application here.
 
+Post something like:
 
+```json
+{
+  "givenName": "Daniel",
+  "familyName": "Tikamori",
+  "email": "tes@test.com"
+}
+```
 
+Then at terminal, run:
 
+```bash
+docker exec -it {mariadb-container-id} mysql -uquarkus -pquarkus quarkus
+```
 
+Then:
+
+`select * from candidates;` to show the candidates table.
+
+Now we can create an integration test.
+
+**Unit testing:**
+
+Test a code snippet. A method, for example.
+
+**Integration testing:**
+
+In the case of Quarkus, it will leave an application running at 8080. Start another instance in another port and send a request to the application.
+It verifies if the communication between different microservices are working.
+
+At test/.../resources, create a `CandidateResourceIT` testing class.
+
+A class that ends with IT isn't executed by JUnit. It is executed by FailSafe, specified at pom.xml:
+
+`<artifactId>maven-failsafe-plugin</artifactId>`
+
+Flyway have a property called skipITs, that usually is set to `true`. So in order to run integration tests, it must be set as `false`.
+There's a command to do it without changing the code:
+
+At terminal, election-management directory, run:
+
+```bash
+./mvnw verify -DskipITs=false -Dquarkus.log.handler.gelf.enabled=false -Dquarkus.opentelemetry.enabled=false -Dquarkus.datasource.jdbc.driver=org.mariadb.jdbc.Driver
+```
+
+This command will run integration tests of the application in prod profile, but connect to the test container.

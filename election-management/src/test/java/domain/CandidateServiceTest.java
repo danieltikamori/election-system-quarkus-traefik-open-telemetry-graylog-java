@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2024 Daniel I. Tikamori. All rights reserved.
+ */
+
 package domain;
 
 import io.quarkus.test.junit.mockito.InjectMock;
@@ -6,7 +10,6 @@ import javax.inject.Inject;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
