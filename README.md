@@ -630,6 +630,28 @@ For the implementation, the test is basically database connection check.
 
 For the interface, all the logic will be inside interface test. It is possible to test MySQL, Redis, etc.
 
+#### entities
+
+At infrastructure/repositories/, create a package called `entities`.
+Inside it create a Candidate class.
+
+Update the Candidate and SQLCandidateRepository classes.
+
+Write the tests for SQLCandidateRepositoryTest and CandidateRepositoryTest.
+
+Run `quarkus dev` and test typing `r`.
+
+After successful test, make sure the database, etc. containers are running and then run the `cicd-build.sh` and then `cicd-blue-green-deployment.sh`.
+
+Open the browser and open http://logging.private.tkmr.localhost search.
+
+
+
+
+
+
+
+
 
 
 
