@@ -28,6 +28,7 @@ sdk install java 17.0.6-tem
 sdk use java 17.0.6-tem
 java --version
 ```
+
 openjdk 17.0.6 2023-01-17
 OpenJDK Runtime Environment Temurin-17.0.6+10 (build 17.0.6+10)
 OpenJDK 64-Bit Server VM Temurin-17.0.6+10 (build 17.0.6+10, mixed mode, sharing)
@@ -98,10 +99,7 @@ docker compose up -d graylog
 curl -H "Content-Type: application/json" \
 -H "Authorization: Basic YWRtaW46YWRtaW4=" \
 -H "X-Requested-By: curl" \
--X POST -v -d '{"title":"udp
-input","configuration":{"recv_buffer_size":262144,"bind_address":"0.0.0.0","port":12201,"de
-compress_size_limit":8388608},"type":"org.graylog2.inputs.gelf.udp.GELFUDPInput","global":t
-rue}' http://logging.private.dio.localhost/api/system/inputs
+-X POST -v -d '{"title":"udp\ninput","configuration":{"recv_buffer_size":262144,"bind_address":"0.0.0.0","port":12201,"decompress_size_limit":8388608},"type":"org.graylog2.inputs.gelf.udp.GELFUDPInput","global":true}' http://logging.private.tkmr.localhost/api/system/inputs
 docker compose up -d caching database
 ```
 
@@ -356,6 +354,9 @@ https://martinfowler.com/eaaCatalog/repository.html
 https://martinfowler.com/eaaCatalog/queryObject.html
 https://martinfowler.com/dslCatalog/constructionBuilder.html
 
+
+### Election Management - service
+
 First run in the terminal:
 
 ```bash
@@ -445,7 +446,7 @@ Here are some key points about Java records:
 
 In summary, Java records simplify data modeling and provide a language-level syntax for common programming patterns. [They’re a powerful addition to the Java language](https://qiita.com/ReiTsukikazu/items/6dc3ec9ea9646c472db0)
 
-### Testing
+#### Testing
 Then create a class CandidateService in the same directory.
 
 Now let's write some tests.
@@ -482,7 +483,451 @@ Remove the break point. Restart the execution.
 
 As I was developing, there's a possibility the of Main class don't be created. So verify and create Main class in the application infrastructure.
 
+#### Build for testing purposes
+
+Certify the .sh files are executable. Make sure other containers are running (the ones started in the Setup section).
+If note running, run these commands:
+
+```bash
+docker compose up -d reverse-proxy
+docker compose up -d jaeger
+docker compose up -d mongodb opensearch
+docker compose up -d graylog
+curl -H "Content-Type: application/json" \
+-H "Authorization: Basic YWRtaW46YWRtaW4=" \
+-H "X-Requested-By: curl" \
+-X POST -v -d '{"title":"udp\ninput","configuration":{"recv_buffer_size":262144,"bind_address":"0.0.0.0","port":12201,"decompress_size_limit":8388608},"type":"org.graylog2.inputs.gelf.udp.GELFUDPInput","global":true}' http://logging.private.tkmr.localhost/api/system/inputs
+docker compose up -d caching database
+```
+
+Build the application. Run:
+
+```bash
+cd election-management
+./cicd-build.sh election-management
+docker images
+./cicd-blue-green-deployment.sh election-management <tag>
+```
+
+Open the browser, type `localhost:8080/dashboard/`.
+Should open the dashboard. Then open `logging.private.tkmr.localhost`.
+Enter admin admin to login.
 
 
+### Election Management - Repository
+
+**Migration**
+- Flyway 
+- Testcontainers
+
+**Data Mapper**
+- Hibernate ORM
+
+At the terminal ./election-management, run:
+
+```bash
+quarkus extension add 'quarkus-flyway' 'quarkus-jdbc-mariadb'
+mkdir -p src/main/resources/db/migration
+```
+The mkdir command will create a directory to store the versioning files of the database (structure).
+
+At pom.xml add the following dependency:
+
+```xml
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-mysql</artifactId>
+    </dependency>
+```
+
+Go to the migration directory and create a file named `V1__CreateTableCandidates.sql`
+Fill the file.
+
+Go to application.properties files and add the following:
+
+```properties
+# FLYWAY
+quarkus.flyway.migrate-at-start=true
+
+# TESTCONTAINERS
+quarkus.datasource.devservices.image-name=mariadb:10.11.2
+```
+
+Open the terminal, at /election-management, run `quarkus dev`.
+Verify if the database is running and connected.
+
+Then run:
+```bash
+docker exec -it <database-container-id> mysql -uquarkus -pquarkus quarkus
+```
+
+**Important note**
+The command above worked with MariaDB 10.11.2. Tried with a more recent version and don worked at all, mysql executable not found in $PATH.
+
+Now that connected to MariaDB, run:
+
+```shell
+show tables;
+```
+
+Then one after another:
+
+```shell
+select * from flyway_schema_history;
+select * from candidates;
+```
+
+Go to docker-compose.yml and at election-management, below `image:`, add:
+
+```yaml
+ environment:
+      - QUARKUS_DATASOURCE_USERNAME=election-management-user
+      - QUARKUS_DATASOURCE_PASSWORD=election-management-password
+      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:mariadb://database:3306/election-management
+```
+
+Also at database, replace existing environment: with:
+
+```yaml
+    environment:
+      - MARIADB_USER=election-management-user
+      - MARIADB_PASSWORD=election-management-password
+      - MARIADB_DATABASE=election-management
+      - MARIADB_ROOT_PASSWORD=root
+```
+
+To update the database container, run:
+
+```bash
+docker compose stop database
+docker compose rm database
+docker compose up -d database
+```
+
+#### Adding Hibernate
+
+Open the terminal, at /election-management, run:
+
+```bash
+quarkus extension add 'quarkus-hibernate-orm'
+```
+
+Update the application.properties adding:
+
+```properties
+# HIBERNATE
+quarkus.datasource.db-kind=mariadb
+quarkus.hibernate-orm.database.generation=none
+%dev.quarkus.hibernate-orm.log.sql=true
+%test.quarkus.hibernate-orm.log.sql=true
+%dev.quarkus.hibernate-orm.log.bind-parameters=true
+%test.quarkus.hibernate-orm.log.bind-parameters=true
+```
+
+Create tests for SQLCandidateRepository class and CandidateRepository interface.
+
+For the implementation, the test is basically database connection check.
+
+For the interface, all the logic will be inside interface test. It is possible to test MySQL, Redis, etc.
+
+#### entities
+
+At infrastructure/repositories/, create a package called `entities`.
+Inside it create a Candidate class.
+
+Update the Candidate and SQLCandidateRepository classes.
+
+Write the tests for SQLCandidateRepositoryTest and CandidateRepositoryTest.
+
+Run `quarkus dev` and test typing `r`.
+
+After successful test, make sure the database, etc. containers are running and then run the `cicd-build.sh` and then `cicd-blue-green-deployment.sh`.
+
+Open the browser and open http://logging.private.tkmr.localhost search.
+
+### Election management - API layer
+
+- JSON Rest Services
+- Data Transfer Object (DTO)
+- Integration Test
+
+Domain layer have the business rules and some  external communication interfaces.
+Infrastructure layer have what is specific for external communication and database configuration.
+API layer do the communication between both. Gateway between Domain and Infrastructure.
+
+At API, create a new `CandidateApi` class. Update the file and create the test.
+
+#### DTO
+
+DTO stands for Data Transfer Object. It is an object that carries data between processes.
+DTOs are often used to encapsulate the data that needs to be transferred over a network or between different layers of an application.
+They typically do not contain any business logic but instead focus on data exchange.
+
+Some best practices for working with Data Transfer Objects (DTOs) include:
+
+- Keep DTOs simple and focused on data transfer only, avoid adding business logic to them.
+- Use DTOs to transfer only the necessary data between layers or components of an application.
+- Consider using mapping libraries to easily convert between DTOs and domain objects.
+- Name DTOs clearly to indicate their purpose and the data they represent.
+- Avoid using nested DTO structures if possible, as they can lead to complexity and performance issues.
+- Validate DTO data at the entry point of the application to ensure consistency and integrity.
+
+These best practices can help maintain a clean and efficient data transfer process within an application.
+
+At api, create a new `dto` package. Inside dto, create 2 packages, one `in` and another `out`.
+At `ìn` package, create CreateCandidate and UpdateCandidate records.
+At `out` package, create Candidate record.
+
+Update the tests.
+
+Now we can think about REST service.
+
+AT infrastructure, create resources package and inside it CandidateResource class.
+
+Generate test for CandidateResource class.
+
+At pom.xml, add a testing Rest assured, Resteasy, Reactive Jackson, and OpenAPI dependencies:
 
 
+```xml
+    <dependency>
+      <groupId>io.rest-assured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-resteasy-reactive</artifactId>
+    </dependency>
+    
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-smallrye-openapi</artifactId>
+    </dependency>
+```
+
+After updating the files, stop traefik and election-management container if still running.
+Run quarkus dev at election-management directory. Open the browser at http://localhost:8080/q/dev.
+Verify that there's new options like Smallrye OpenAPI. 
+Open http://localhost:8080/q/openapi.json to see the API specification.
+Open Swagger UI. You can test the application here.
+
+Post something like:
+
+```json
+{
+  "givenName": "Daniel",
+  "familyName": "Tikamori",
+  "email": "tes@test.com",
+  "jobTitle": "Solutions Architect" 
+}
+```
+
+Then at terminal, run:
+
+```bash
+docker exec -it {mariadb-container-id} mysql -uquarkus -pquarkus quarkus
+```
+
+Then:
+
+`select * from candidates;` to show the candidates table.
+
+Now we can create an integration test.
+
+**Unit testing:**
+
+Test a code snippet. A method, for example.
+
+**Integration testing:**
+
+In the case of Quarkus, it will leave an application running at 8080. Start another instance in another port and send a request to the application.
+It verifies if the communication between different microservices are working.
+
+At test/.../resources, create a `CandidateResourceIT` testing class.
+
+A class that ends with IT isn't executed by JUnit. It is executed by FailSafe, specified at pom.xml:
+
+`<artifactId>maven-failsafe-plugin</artifactId>`
+
+Flyway have a property called skipITs, that usually is set to `true`. So in order to run integration tests, it must be set as `false`.
+There's a command to do it without changing the code:
+
+At terminal, election-management directory, run:
+
+```bash
+./mvnw verify -DskipITs=false -Dquarkus.log.handler.gelf.enabled=false -Dquarkus.opentelemetry.enabled=false -Dquarkus.datasource.jdbc.driver=org.mariadb.jdbc.Driver
+```
+
+This command will run integration tests of the application in prod profile, but connect to the test container.
+
+#### Changing the opentelemetry driver
+
+As we can send HTTP requests and want to use Jaeger to trace the database, we will add opentelemetry driver at application.properties:
+
+```properties
+%prod.quarkus.datasource.jdbc.driver=io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver
+```
+
+Also, add one opentelemetry dependency at pom.xml:
+
+```xml
+    <dependency>
+      <groupId>io.opentelemetry.instrumentation</groupId>
+      <artifactId>opentelemetry-jdbc</artifactId>
+    </dependency>
+```
+
+As we changed the driver, we will be modifying also the docker-compose.yml.
+
+Modify the following line:
+
+`      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:mariadb://database:3306/election-management`
+
+To:
+
+`      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:otel:mariadb://database:3306/election-management`
+
+#### Build to test the new telemetry driver
+
+Run the `cicd-build.sh election-management` and then the `cicd-blue-green-deployment.sh election-management {tag}`.
+
+Open `http://localhost:8080/dashboard#/http/routers` to see the mapping.
+
+Then open `http://localhost:8080/dashboard#/http/routers/election-management@docker`.
+
+Swagger usually is accessible only on dev env, but we can change to be visible at prod.
+
+Also, can test through Postman.
+
+GET `http://vote.tkmr.localhost/api/candidates`
+
+If we get errors like 404, re-run Traefik container or the election-management container.
+Sometimes may not work, so proceed to POST method.
+
+POST Body JSON:
+
+```json
+{
+   "givenName": "Daniel",
+   "familyName": "Tikamori",
+   "email": "tes@test.com",
+   "jobTitle": "Solutions Architect"
+}
+```
+
+GET `http://vote.tkmr.localhost/api/candidates`
+
+Verify if worked.
+
+#### Tracing with Jaeger
+
+Open `http://telemetry.private.tkmr.localhost/search` admin admin.
+
+Select election-management at Service field and press Find Traces button.
+
+Click on any result items (preferably the ones with higher spans number).
+Explore clicking the bars, etc.
+
+Jaeger is useful to verify execution times and if there's a costly method, it can be traced adding a specific annotation.
+
+### Events
+
+- Redis
+- Event Driven - Redis Pub/Sub
+
+Create V2 of migration:
+
+At resources/db.migration, create a `V2__CreateTableElections.sql`.
+May add SEED with https://mockaroo.com to populate the database.
+
+Keep running `quarkus dev` at election-management.
+
+At domain, create a `Election` record.
+Also at domain, create `ElectionService` class.
+To persist election data, create `ElectionRepository` interface.
+
+From now on, we will be focusing on development. May create tests if you will.
+
+At infrastructure/repositories, create a `SQLElectionRepository` class that implements the `ElectionRepository` interface.
+At infrastructure/repositories, create a `RedisElectionRepository` class that implements the `ElectionRepository` interface.
+When persist data in the database, it will also persist at Redis caching database using the same interface.
+
+Now we need election entity. At infrastructure/repositories/entities, create an `Election` class entity.
+Also, inside the same package, create `ElectionCandidate` and then `ElectionCandidateId` class.
+
+Now we need import Redis client.
+
+We can add the dependency directly into the pom.xml or run at the election-management:
+
+```bash
+quarkus extension add 'quarkus-redis-client'
+```
+
+Update the `RedisElectionRepository` class.
+
+At api, create `ElectionApi` class.
+
+At infrastructure/resources/, create `ElectionResource` class.
+
+Now it is time to test. Stop other containers that are using 8080 port. Run through `quarkus dev`.
+
+Test using Swagger UI. If you use the seed, using GET method, it should show data.
+Test POST method too.
+
+Test election creation at Election resource. It will work only if there's at least a candidate.
+
+Take a look at the test database, using `docker exec -it {mariadb-container-id} mysql -uquarkus -pquarkus quarkus` command.
+
+Run:
+
+```sql
+select * from elections;
+select * from election_candidate;
+```
+
+Now connect to Redis, run:
+
+```bash
+docker ps | grep redis
+```
+
+Copy the test Redis container id.
+
+```bash
+docker exec -it {redis-container-id} redis-cli
+```
+Key referring the election:
+```bash
+keys *
+```
+
+We can see everything in the sorted set using 0 and -1. WITHSCORES allow to see the votes.
+
+```bash
+ZRANGE {key-starting-without-""} 0 -1 WITHSCORES
+```
+
+Subscribe to elections channel:
+
+```bash
+SUBSCRIBE elections
+```
+
+To simulate a scenario with many applications listening the same channel, open new terminals and connect to Redis:
+
+```bash
+docker exec -it {redis-container-id} redis-cli
+
+SUBSCRIBE elections
+```
+
+Back to Swagger, publish (POST) another election. A message should be sent to the terminals listening the channel.
+
+See: https://developertoarchitect.com/lessons/lesson137.html
