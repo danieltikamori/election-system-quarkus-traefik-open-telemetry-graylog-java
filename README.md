@@ -837,6 +837,97 @@ Explore clicking the bars, etc.
 
 Jaeger is useful to verify execution times and if there's a costly method, it can be traced adding a specific annotation.
 
+### Events
 
+- Redis
+- Event Driven - Redis Pub/Sub
 
+Create V2 of migration:
 
+At resources/db.migration, create a `V2__CreateTableElections.sql`.
+May add SEED with https://mockaroo.com to populate the database.
+
+Keep running `quarkus dev` at election-management.
+
+At domain, create a `Election` record.
+Also at domain, create `ElectionService` class.
+To persist election data, create `ElectionRepository` interface.
+
+From now on, we will be focusing on development. May create tests if you will.
+
+At infrastructure/repositories, create a `SQLElectionRepository` class that implements the `ElectionRepository` interface.
+At infrastructure/repositories, create a `RedisElectionRepository` class that implements the `ElectionRepository` interface.
+When persist data in the database, it will also persist at Redis caching database using the same interface.
+
+Now we need election entity. At infrastructure/repositories/entities, create an `Election` class entity.
+Also, inside the same package, create `ElectionCandidate` and then `ElectionCandidateId` class.
+
+Now we need import Redis client.
+
+We can add the dependency directly into the pom.xml or run at the election-management:
+
+```bash
+quarkus extension add 'quarkus-redis-client'
+```
+
+Update the `RedisElectionRepository` class.
+
+At api, create `ElectionApi` class.
+
+At infrastructure/resources/, create `ElectionResource` class.
+
+Now it is time to test. Stop other containers that are using 8080 port. Run through `quarkus dev`.
+
+Test using Swagger UI. If you use the seed, using GET method, it should show data.
+Test POST method too.
+
+Test election creation at Election resource. It will work only if there's at least a candidate.
+
+Take a look at the test database, using `docker exec -it {mariadb-container-id} mysql -uquarkus -pquarkus quarkus` command.
+
+Run:
+
+```sql
+select * from elections;
+select * from election_candidate;
+```
+
+Now connect to Redis, run:
+
+```bash
+docker ps | grep redis
+```
+
+Copy the test Redis container id.
+
+```bash
+docker exec -it {redis-container-id} redis-cli
+```
+Key referring the election:
+```bash
+keys *
+```
+
+We can see everything in the sorted set using 0 and -1. WITHSCORES allow to see the votes.
+
+```bash
+ZRANGE {key-starting-without-""} 0 -1 WITHSCORES
+```
+
+Subscribe to elections channel:
+
+```bash
+SUBSCRIBE elections
+```
+
+To simulate a scenario with many applications listening the same channel, open new terminals and connect to Redis:
+
+```bash
+docker exec -it {redis-container-id} redis-cli
+
+SUBSCRIBE elections
+```
+
+Back to Swagger, publish (POST) another election. A message should be sent to the terminals listening the channel.
+
+See: https://developertoarchitect.com/lessons/lesson137.html
