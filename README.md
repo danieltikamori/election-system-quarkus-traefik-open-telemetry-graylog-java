@@ -724,7 +724,8 @@ Post something like:
 {
   "givenName": "Daniel",
   "familyName": "Tikamori",
-  "email": "tes@test.com"
+  "email": "tes@test.com",
+  "jobTitle": "Solutions Architect" 
 }
 ```
 
@@ -765,3 +766,77 @@ At terminal, election-management directory, run:
 ```
 
 This command will run integration tests of the application in prod profile, but connect to the test container.
+
+#### Changing the opentelemetry driver
+
+As we can send HTTP requests and want to use Jaeger to trace the database, we will add opentelemetry driver at application.properties:
+
+```properties
+%prod.quarkus.datasource.jdbc.driver=io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver
+```
+
+Also, add one opentelemetry dependency at pom.xml:
+
+```xml
+    <dependency>
+      <groupId>io.opentelemetry.instrumentation</groupId>
+      <artifactId>opentelemetry-jdbc</artifactId>
+    </dependency>
+```
+
+As we changed the driver, we will be modifying also the docker-compose.yml.
+
+Modify the following line:
+
+`      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:mariadb://database:3306/election-management`
+
+To:
+
+`      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:otel:mariadb://database:3306/election-management`
+
+#### Build to test the new telemetry driver
+
+Run the `cicd-build.sh election-management` and then the `cicd-blue-green-deployment.sh election-management {tag}`.
+
+Open `http://localhost:8080/dashboard#/http/routers` to see the mapping.
+
+Then open `http://localhost:8080/dashboard#/http/routers/election-management@docker`.
+
+Swagger usually is accessible only on dev env, but we can change to be visible at prod.
+
+Also, can test through Postman.
+
+GET `http://vote.tkmr.localhost/api/candidates`
+
+If we get errors like 404, re-run Traefik container or the election-management container.
+Sometimes may not work, so proceed to POST method.
+
+POST Body JSON:
+
+```json
+{
+   "givenName": "Daniel",
+   "familyName": "Tikamori",
+   "email": "tes@test.com",
+   "jobTitle": "Solutions Architect"
+}
+```
+
+GET `http://vote.tkmr.localhost/api/candidates`
+
+Verify if worked.
+
+#### Tracing with Jaeger
+
+Open `http://telemetry.private.tkmr.localhost/search` admin admin.
+
+Select election-management at Service field and press Find Traces button.
+
+Click on any result items (preferably the ones with higher spans number).
+Explore clicking the bars, etc.
+
+Jaeger is useful to verify execution times and if there's a costly method, it can be traced adding a specific annotation.
+
+
+
+
