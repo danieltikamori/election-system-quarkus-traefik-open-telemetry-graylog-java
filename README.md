@@ -690,26 +690,27 @@ At pom.xml, add a testing Rest assured, Resteasy, Reactive Jackson, and OpenAPI 
 
 
 ```xml
+  <dependencies>
+   
     <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-resteasy-reactive</artifactId>
     </dependency>
-    
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
     </dependency>
-
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-smallrye-openapi</artifactId>
     </dependency>
+   
+   </dependencies>
 ```
 
 After updating the files, stop traefik and election-management container if still running.
@@ -862,6 +863,12 @@ When persist data in the database, it will also persist at Redis caching databas
 Now we need election entity. At infrastructure/repositories/entities, create an `Election` class entity.
 Also, inside the same package, create `ElectionCandidate` and then `ElectionCandidateId` class.
 
+At `docker-compose.yml`, add:
+
+`      - QUARKUS_REDIS_HOSTS=redis://caching:6379`
+
+Below `      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:otel:mariadb://database:3306/election-management`
+
 Now we need import Redis client.
 
 We can add the dependency directly into the pom.xml or run at the election-management:
@@ -931,3 +938,149 @@ SUBSCRIBE elections
 Back to Swagger, publish (POST) another election. A message should be sent to the terminals listening the channel.
 
 See: https://developertoarchitect.com/lessons/lesson137.html
+
+## Voting application
+
+- Lifecycle onStartup
+- Redis - Redis Pub/Sub
+- Memoization/Caching
+- Reactive language - Mutiny
+
+**Memoization**
+
+In computing, memoization or memoisation is an optimization technique used primarily to speed up computer programs by storing the results of expensive function calls to pure functions and returning the cached result when the same inputs occur again. Memoization has also been used in other contexts (and for purposes other than speed gains), such as in simple mutually recursive descent parsing. It is a type of caching, distinct from other forms of caching such as buffering and page replacement. In the context of some logic programming languages, memoization is also known as tabling.
+
+Memoization is a powerful technique used in computer science to optimize the execution of recursive or computationally expensive functions.
+
+Go to voting-app to get started.
+
+Add Quarkus Redis client, cache and reactive jackson:
+
+```bash
+cd voting-app
+quarkus extension add 'quarkus-redis-client'
+quarkus extension add cache
+quarkus extension add 'quarkus-resteasy-reactive-jackson'
+```
+
+Or by adding in the pom.xml file:
+
+```xml
+  <dependencies>
+   
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-redis-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-cache</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+    </dependency>
+   
+  </dependencies>
+```
+
+At domain, create `Candidate` record.
+At domain, create `Election` record.
+
+We will work on Redis connection happening at the app startup.
+
+At infrastructure, create a `lifecycle` package and inside it, `Subscribe` class.
+
+At infrastructure, create `repositories` package and inside it, `RedisElectionRepository` class.
+
+At domain, create `ElectionRepository` interface. Then implement it at `RedisElectionRepository`.
+
+Quarkus have a reactive architecture, event loop. Similar to Node.js. It tries to not block a thread.
+Event loop expects to events occur asynchronously, but Redis can be run synchronously, what may cause exceptions.
+`RedisDataSource` may not work, so use `ReactiveRedisDataSource` instead in some occasions.
+
+As the application may eventually scale up, new instances won't be aware of the election happening at that moment, so the instance should consult first if there's an election happening at the startup.
+
+At lifecycle, create `Cache` class. It will look for elections happening at the moment and will also listen to new elections.
+
+Test the app by running `quarkus dev` and then:
+
+```bash
+docker ps | grep redis
+```
+
+Copy the test Redis container id.
+
+```bash
+docker exec -it {redis-container-id} redis-cli
+```
+Key referring the election and add election:
+```bash
+keys *
+ZADD election:election-id 0 "candidate-1" 0 "candidate-2"
+keys *
+```
+
+#### Domain Layer
+
+At domain, create `ElectionService` class.
+
+#### API layer
+
+At api, create `ElectionApi`.
+
+At api, create `dto.out` package and inside it, the `Election` record.
+
+#### Exposing the service through resource
+
+At infrastructure, create `resources` package. Inside it create `VotingResource`.
+
+Test the app again by running `quarkus dev` and then:
+
+```bash
+docker ps | grep redis
+```
+
+Copy the test Redis container id.
+
+```bash
+docker exec -it {redis-container-id} redis-cli
+```
+Key referring the election and add election:
+```bash
+keys *
+ZADD election:123 0 "candidate-1" 0 "candidate-2"
+keys *
+zrange election:123 0 -1 WITHSCORES
+```
+
+Quit Redis CLI or open another terminal and run:
+
+```bash
+curl localhost:8080/api/voting
+curl -X POST localhost:8080/api/voting/elections/123/candidates/candidate-1
+```
+
+At the Redis CLI, run:
+
+```bash
+zrange election:123 0 -1 WITHSCORES
+```
+
+Should have incremented vote for candidate-1. May test incrementing votes using the `curl -X POST` command above.
+
+Go to `docker-compose.yml` to update the voting-app connection adding below `image` parameter:
+
+```yaml
+    environment:
+      - QUARKUS_REDIS_HOSTS=redis://caching:6379
+```
+
+
+
+
+
+
+
+
+
