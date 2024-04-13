@@ -1076,10 +1076,57 @@ Go to `docker-compose.yml` to update the voting-app connection adding below `ima
       - QUARKUS_REDIS_HOSTS=redis://caching:6379
 ```
 
+### Synchronism
 
+- Scheduler
 
+Back to Election management application, we will synchronize the values stored in the Redis database into the MariaDB database.
+It will be done through the scheduler, which will run a scheduled task each 10 seconds.
 
+Open the terminal, cd to election-management and run:
 
+```bash
+quarkus extension add 'quarkus-scheduler'
+```
+
+This command adds the quarkus-scheduler to pom.xml.
+
+As it will be managed by the infrastructure, add a new package to election-management/.../infrastructure/. Inside it, create a `Sync` class.
+
+Create the findAll method at infrastructure/repositories/SQLElectionRepository.java.
+Create the sync method at infrastructure/repositories/RedisElectionRepository.java.
+
+Edit `ElectionCandidate` class inside entities package.
+
+Open the terminal, run `quarkus dev` to test the election-management app.
+open another terminal tab and run:  `curl -X POST localhost:8080/api/elections`
+
+Connect to the MariaDB to check:
+
+```bash
+docker exec -it <mariadb> mysql -uquarkus -pquarkus quarkus
+```
+
+```sql
+select * from election_candidate;
+```
+
+Open another terminal to keep MariaDB connection open. Now connect to Redis:
+
+```bash
+docker exec -it <redis> redis-cli
+```
+
+Check if number of votes are incrementing:
+
+```redis
+keys *
+zrange election:........... 0 -1 WITHSCORES
+zincrby election:....... 1 <candidate_id>
+zincrby election:....... 1 <candidate_id>
+zincrby election:....... 1 <candidate_id>
+keys *
+```
 
 
 
