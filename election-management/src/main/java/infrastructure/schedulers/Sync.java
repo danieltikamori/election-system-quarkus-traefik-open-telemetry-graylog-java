@@ -21,8 +21,8 @@ public class Sync {
     }
 
     @Scheduled(cron = "*/5 * * * * ?")
-    void sync() {
-
+    void syncWorker() {
         sqlRepository.findAll().forEach(election -> sqlRepository.sync(redisRepository.sync(election)));
     }
+
 }
