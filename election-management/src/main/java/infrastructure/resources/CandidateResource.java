@@ -4,7 +4,6 @@
 
 package infrastructure.resources;
 
-
 import api.CandidateApi;
 import api.dto.in.CreateCandidate;
 import api.dto.in.UpdateCandidate;
@@ -54,5 +53,11 @@ public class CandidateResource {
     @GET
     public List<Candidate> list() {
         return api.list();
+    }
+
+    @GET
+    @Path("/page/{page}/size/{size}")
+    public List<Candidate> list(@PathParam("page") int page, @PathParam("size") int size) {
+        return api.list(page, size);
     }
 }

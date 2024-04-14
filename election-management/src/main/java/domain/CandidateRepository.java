@@ -27,4 +27,6 @@ public interface CandidateRepository {
     void delete(String id);
 
     Candidate update(Candidate domain);
+
+    List<Candidate> findAll(int page, int size);
 }

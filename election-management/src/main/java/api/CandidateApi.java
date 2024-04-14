@@ -35,4 +35,8 @@ public class CandidateApi {
     public void delete(Long id) {
         service.delete(String.valueOf(id));
     }
+
+    public List<Candidate> list(int page, int size) {
+        return service.findAll(page, size).stream().map(Candidate::fromDomain).toList();
+    }
 }

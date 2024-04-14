@@ -35,4 +35,8 @@ public class CandidateService {
     public Candidate update(Candidate domain) {
         return repository.update(domain);
     }
+
+    public List<Candidate> findAll(int page, int size) {
+        return repository.findAll(page, size);
+    }
 }
