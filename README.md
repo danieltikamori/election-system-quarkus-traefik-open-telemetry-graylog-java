@@ -1358,37 +1358,71 @@ Optionally you can create a front-end in React.
 
 Check the database.
 
-Desafios
+## Kubernetes Migration Planning
 
-- (Developer) Adicione métricas nas aplicações usando Grafana como dashboard
-  - https://grafana.com https://quarkus.io/guides/micrometer
+### Introduction
 
-- (Developer) Finalize a implementação do gerenciamento de candidatos no election-management
-  ○
-  Remoção, Listagem com Paginação
-  ●
-  (Developer) Substitua o gerenciamento de candidatos por REST Data with Panache
-  ○
-  https://quarkus.io/guides/rest-data-panache
-  ●
-  (Developer) Implemente alterações no código para tornar as aplicações mais reactivas/assíncrona
-  ○
-  https://quarkus.io/guides/resteasy-reactive#asyncreactive-support
-  ●
-  ●
-  ●
-  ●
-  ●
-  ●
-  (DevOps) Provisione uma réplica de leitura do banco de dados, habilitando múltiplas conexões nos repositories
-  ○
-  https://mariadb.com/kb/en/setting-up-replication https://quarkus.io/guides/hibernate-orm#multiple-persistence-units
-  (DevOps) Planeje a migração desse sistema para um ambiente Kubernetes
-  (DevSecOps) Planeje um processo de Modelagem de Ameaças considerando técnicas de detecção e prevenção de DDoS
-  ○
-  https://owasp.org/www-community/Threat_Modeling_Process
-  (Architect) Documente ADRs para: 1- evitar múltiplos votos de uma mesma origem, 2: detecção de fraude incluindo auditoria
-  ○
-  https://docs.aws.amazon.com/prescriptive-guidance/latest/architectural-decision-records/appendix.html
-  (Data Scientist) Modele um workflow para Análise Preditiva do resultado da eleição
-  (Product Owner) Crie um roadmap com novas funcionalidades
+The purpose of this roadmap is to provide a comprehensive roadmap for migrating your election management system to a Kubernetes environment. Migrating to Kubernetes offers several benefits, including improved scalability, reliability, and security.
+
+### Prerequisites
+
+Before starting the migration, it is essential to ensure that the following prerequisites are met:
+ 
+- Configured and operational Kubernetes cluster
+- Basic knowledge of Kubernetes and container concepts
+- Container images for system applications
+
+### Migration Steps
+
+1. Containerization of Applications
+   Create container images for each application on your system using a tool like Docker or Podman.
+   Container images must include all dependencies and libraries required to run applications.
+
+
+2. Creating Kubernetes Manifestos
+   Create Kubernetes manifests (e.g. Deployments, Services) for each application.
+   Manifests must specify container images, number of replicas, and exposure ports.
+
+
+3. Deployment to Kubernetes
+   Deploy the Kubernetes manifests to the Kubernetes cluster using the kubectl apply command.
+   Verify that pods and services have been created and are running.
+
+
+4. Load Balancing Configuration
+   Configure a load balancer to distribute traffic between application instances.
+   The load balancer can be a Kubernetes service of type LoadBalancer or a third-party solution.
+
+
+5. Monitoring and Logging
+   Configure monitoring and logging for your deployed applications.
+   Use tools like Prometheus and Grafana to monitor metrics and logs.
+
+
+6. Configuration Management
+   Use Kubernetes ConfigMap or Secret to manage application configuration.
+   This allows for easy configuration updates without having to redeploy applications.
+
+
+7. Automatic Scaling
+   Configure autoscaling for your applications using the Kubernetes Horizontal Pod Autoscaler (HPA).
+   HPA will automatically adjust the number of replicas based on the workload.
+
+
+8. Fault Tolerance
+   Configure fault tolerance for your applications using features such as liveness probes and readiness probes.
+   This ensures that failed pods are automatically restarted and traffic is directed to healthy pods.
+
+
+9. Security
+   Implement security measures, such as role-based access control (RBAC) and network policies, to protect your Kubernetes cluster and deployed applications.
+   Use verified container images and update them regularly to fix vulnerabilities.
+
+
+10. Continuous Monitoring
+    Continuously monitor the Kubernetes cluster and deployed applications to identify and resolve any issues.
+    Use tools like Kubernetes Dashboard or Lens to get real-time visibility into your cluster.
+
+### Conclusion
+
+By following this comprehensive planning, you can successfully migrate your election management system to a Kubernetes environment. Migrating to Kubernetes will provide the benefits of improved scalability, reliability, and security, enabling the system to meet growing demands and ensure election integrity.

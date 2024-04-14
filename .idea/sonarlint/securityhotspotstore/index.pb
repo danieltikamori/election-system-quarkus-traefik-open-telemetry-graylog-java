@@ -35,3 +35,9 @@ k
 ;src/main/java/infrastructure/resources/ResultResources.java,e/7/e755cf09cc32f7183f66dbed07f598ef31e7871c
 \
 ,src/main/java/domain/ElectionRepository.java,3/5/355825b475534f0ffb4828207d390cc32c7307a1
+7
+pom.xml,4/4/442292b8a7efeabbe4cc176709b833b1792140ec
+X
+(src/main/java/domain/CandidateQuery.java,7/0/70f32608d421538b909b2a301a6d7bcaf028a3cc
+Y
+)src/main/java/domain/annotations/SQL.java,5/d/5de783a43b5e7e2367137a62d85342fe140e99ce
