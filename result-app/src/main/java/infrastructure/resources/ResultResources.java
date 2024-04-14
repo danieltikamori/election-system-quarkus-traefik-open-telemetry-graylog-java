@@ -28,9 +28,9 @@ public class ResultResources {
     @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Multi<List<Election>> results() {
         return Multi.createFrom()
-                    .ticks()
-                    .every(Duration.ofSeconds(10))
-                    .onItem()
-                    .transformToMultiAndMerge(n -> electionManagement.getElections().toMulti());
+                .ticks()
+                .every(Duration.ofSeconds(10))
+                .onItem()
+                .transformToMultiAndMerge(n -> electionManagement.getElections().toMulti());
     }
 }

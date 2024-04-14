@@ -5,6 +5,7 @@
 package domain;
 
 import javax.enterprise.context.ApplicationScoped;
+
 import java.util.List;
 
 @ApplicationScoped
@@ -19,13 +20,12 @@ public class ElectionService {
         return repository.findAll();
     }
 
-//    With DDOS attack / brute force avoidance. No return.
     public void vote(String electionId, String candidateId) {
         repository.findById(electionId)
-                  .candidates()
-                  .stream()
-                  .filter(candidate -> candidate.id().equals(candidateId))
-                  .findFirst()
-                  .ifPresent(candidate -> repository.vote(electionId, candidate));
+                .candidates()
+                .stream()
+                .filter(candidate -> candidate.id().equals(candidateId))
+                .findFirst()
+                .ifPresent(candidate -> repository.vote(electionId, candidate));
     }
 }

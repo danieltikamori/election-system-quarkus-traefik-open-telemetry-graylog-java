@@ -1201,9 +1201,194 @@ curl localhost:8081
 
 Keep the connection opened. Each x seconds, will show the updates.
 
+## Demonstration
+
+- Demonstration
+- Load Testing
+- Client React
+
+Some files were edited here, so see the latest version.
+
+Ideally all applications should have the same version (TAG).
+Edit the pom.xml file of every application to match the version.
+
+Open the terminal. At the project root directory, build the applications:
+
+```bash
+./cicd-build.sh election-mmanagement
+./cicd-build.sh result-app
+./cicd-build.sh voting-app
+```
+
+Verify the docker images created:
+
+```bash
+docker images
+```
+
+Then run the CICD script to deploy the applications:
+
+```bash
+./cicd-blue-green-deployment.sh election-management <TAG>
+./cicd-blue-green-deployment.sh voting-app <TAG>
+./cicd-blue-green-deployment.sh result-app <TAG>
+```
+
+To visualize the deployment:
+
+```bash
+docker compose ps | grep <TAG>
+```
+
+Connect to the database to check the elections (empty) and candidates (possibly with some candidates).
+
+```bash
+docker exec -it {mariadb} mysql -uquarkus -pquarkus quarkus
+```
+
+```sql
+select * from elections;
+select * from candidates;
+```
 
 
+Connect to the Redis database to check if it is empty.
 
+```bash
+docker exec -it {redis} redis-cli
+```
 
+```redis
+keys *
+```
 
+### Testing the endpoints
 
+Open Postman.
+
+GET http://vote.tkmr.localhost/api/candidates
+
+Open graylog:
+
+http://logging.private.tkmr.localhost/search
+
+See the logs.
+
+Open Jaeger:
+
+http://telemetry.private.tkmr.localhost/search
+
+Traefik dashboard:
+
+http://localhost:8080/dashboard
+
+Back to Postman:
+
+Consult currently running elections:
+GET http://vote.tkmr.localhost/api/elections
+
+GET http://vote.tkmr.localhost/api/voting
+
+POST http://vote.tkmr.localhost/api/elections
+Empty body.
+
+GET http://vote.tkmr.localhost/api/elections
+
+GET http://vote.tkmr.localhost/api/voting
+
+See the logs: Jaeger, graylog.
+
+Connect to the database to check the results.
+
+### Scaling the voting-app
+
+Run in the terminal:
+
+```bash
+TAG=<TAG> docker-compose up -d voting-app --scale voting-app=4 --no-recreate
+docker-compose ps | grep <TAG>
+```
+### Voting
+
+At Postman if you want to do manually:
+
+POST http://vote.tkmr.localhost/api/voting/elections/{electionId}/candidates/{candidateId}
+
+Using the script loading test using Locust script in Python:
+
+Create an application in Python called load-testing. Inside it, `locustfile.py`:
+
+```python
+import random
+form locus import HttpUser, task, between
+
+class VoteTKMR(HttpUser):
+   wait_time = between(1. 5)
+   
+   @task
+   def voting(self):
+      for election in self.client.get("/api/voting").json():
+      election_id = election['id']
+      candidate_id = random.choice(election['candidates'])
+      
+      self.client.post(f"/api/voting/elections/{election_id}/candidates/{candidate_id}")
+      
+# locust --headless --users 1 --spawn-rate 1 -H http://vote.tkmr.localhost
+```
+
+At the terminal, run:
+
+```bash
+locust -H http://vote.tkmr.localhost
+```
+
+Open in the browser http://localhost:8089 or another port provided by locust.
+
+Set the specifications and run.
+
+Check the logging dashboards.
+
+Back to Postman:
+
+GET http://vote.tkmr.localhost
+
+It will redirect to Result application. Result application will open a connection using the server side event loop. Each x seconds will update.
+
+Optionally you can create a front-end in React.
+
+Check the database.
+
+Desafios
+
+- (Developer) Adicione métricas nas aplicações usando Grafana como dashboard
+  - https://grafana.com https://quarkus.io/guides/micrometer
+
+- (Developer) Finalize a implementação do gerenciamento de candidatos no election-management
+  ○
+  Remoção, Listagem com Paginação
+  ●
+  (Developer) Substitua o gerenciamento de candidatos por REST Data with Panache
+  ○
+  https://quarkus.io/guides/rest-data-panache
+  ●
+  (Developer) Implemente alterações no código para tornar as aplicações mais reactivas/assíncrona
+  ○
+  https://quarkus.io/guides/resteasy-reactive#asyncreactive-support
+  ●
+  ●
+  ●
+  ●
+  ●
+  ●
+  (DevOps) Provisione uma réplica de leitura do banco de dados, habilitando múltiplas conexões nos repositories
+  ○
+  https://mariadb.com/kb/en/setting-up-replication https://quarkus.io/guides/hibernate-orm#multiple-persistence-units
+  (DevOps) Planeje a migração desse sistema para um ambiente Kubernetes
+  (DevSecOps) Planeje um processo de Modelagem de Ameaças considerando técnicas de detecção e prevenção de DDoS
+  ○
+  https://owasp.org/www-community/Threat_Modeling_Process
+  (Architect) Documente ADRs para: 1- evitar múltiplos votos de uma mesma origem, 2: detecção de fraude incluindo auditoria
+  ○
+  https://docs.aws.amazon.com/prescriptive-guidance/latest/architectural-decision-records/appendix.html
+  (Data Scientist) Modele um workflow para Análise Preditiva do resultado da eleição
+  (Product Owner) Crie um roadmap com novas funcionalidades

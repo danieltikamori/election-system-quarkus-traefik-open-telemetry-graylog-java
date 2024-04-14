@@ -4,7 +4,7 @@
 
 package domain;
 
-import domain.annotations.Principal;
+import domain.annotations.SQL;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Any;
@@ -17,7 +17,7 @@ public class ElectionService {
     private final Instance<ElectionRepository> repositories;
     private final CandidateService candidateService;
 
-    public ElectionService(@Principal ElectionRepository repository, @Any Instance<ElectionRepository> repositories, CandidateService candidateService) {
+    public ElectionService(@SQL ElectionRepository repository, @Any Instance<ElectionRepository> repositories, CandidateService candidateService) {
         this.repository = repository;
         this.repositories = repositories;
         this.candidateService = candidateService;

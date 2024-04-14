@@ -40,9 +40,9 @@ public class RedisElectionRepository implements ElectionRepository {
         LOGGER.info("Retrieving election " + id + " from redis");
 
         return new Election(id, sortedSetCommands.zrange(KEY + id, 0, -1)
-                                                 .stream()
-                                                 .map(Candidate::new)
-                                                 .toList());
+                .stream()
+                .map(Candidate::new)
+                .toList());
     }
 
     @Override
