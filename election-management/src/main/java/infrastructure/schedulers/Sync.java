@@ -4,6 +4,7 @@
 
 package infrastructure.schedulers;
 
+import domain.annotations.Principal;
 import infrastructure.repositories.RedisElectionRepository;
 import infrastructure.repositories.SQLElectionRepository;
 import io.quarkus.scheduler.Scheduled;
@@ -15,7 +16,7 @@ public class Sync {
     private final SQLElectionRepository sqlRepository;
     private final RedisElectionRepository redisRepository;
 
-    public Sync(SQLElectionRepository sqlRepository, RedisElectionRepository redisRepository) {
+    public Sync(@Principal SQLElectionRepository sqlRepository, RedisElectionRepository redisRepository) {
         this.sqlRepository = sqlRepository;
         this.redisRepository = redisRepository;
     }

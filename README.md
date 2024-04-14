@@ -1128,6 +1128,82 @@ zincrby election:....... 1 <candidate_id>
 keys *
 ```
 
+Return to the terminal running the application and see the results.
+
+## Result application
+
+- Qualifier
+- Rest Client
+- Server Sent Events
+
+Keep the election-management application running with `quarkus dev` command.
+
+At election-management module, edit the domain/ElectionService.
+
+Will need to create the annotations package at domain. Inside it, `Principal` annotation.
+
+Edit `ElectionService` to use the `Principal` annotation.
+
+Also, at `ElectionService`, the method findAll() must be created at the `ElectionRepository` interface.
+Then add findAll() method in the implementations like `RedisElectionRepository`.
+
+Ideally, we should not implement a method that won't be called. In this case, we need more interfaces.
+
+Edit `SQLElectionRepository` adding @Override annotation to findAll() method and adding @Principal annotation for the class.
+
+Also edit `Sync` class adding @Principal annotation to Sync constructor.
+
+Go to `ElectionApi` to implement the findAll method.
+
+Create an `Election` record at dto/out.
+
+Return to `ElectionApi` and import the `Election` record at dto/out.
+
+Create the `fromDomain` method in the `Election` record.
+
+Finish editing the `Election` record. Some snippets can be copied from `Candidate` record in the same package.
+
+Then go to infrastructure/resources/ElectionResource class and add @GET.
+
+Test the application from the terminal. Open another terminal and run:
+
+```bash
+curl -X POST localhost:8080/api/elections
+curl localhost:8080/api/elections
+curl localhost:8080/api/elections |jq
+```
+
+Now go to result-app.
+
+Open the terminal, go to result-app directory, then run:
+
+```bash
+quarkus extension add 'quarkus-rest-client' 'quarkus-rest-client-jackson' 'quarkus-resteasy-reactive-jackson' 'quarkus-rest-client-mutiny'
+```
+If the command doesn't work, use the pom.xml in this project.
+
+While developing, we will change the port. To do so, go to application.properties and edit.
+
+Go to infrastructure and create a new package called `rest`. Inside it, create an interface called `ElectionManagement`.
+As for `configKey="election-management"`, edit the application.properties adding url, etc.
+
+At /api, create a dto.in package. Inside it, create `Election` record.
+
+At infrastructure, create another package called `resources`. Inside it, create ResultResources class.
+
+Restart the result application.
+
+Open another terminal and run:
+
+```bash
+curl localhost:8081
+```
+
+Keep the connection opened. Each x seconds, will show the updates.
+
+
+
+
 
 
 

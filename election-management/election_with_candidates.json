@@ -1,0 +1,15 @@
+{
+  "id": "e1",
+  "created_at": 165250240000,
+  "updated_at": 165250240000,
+  "candidates": [
+    {
+      "id": "c1",
+      "votes": 0
+    },
+    {
+      "id": "c2",
+      "votes": 0
+    }
+  ]
+}
